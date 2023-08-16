@@ -4,13 +4,13 @@ WORKDIR /app
 COPY go.mod ./
 COPY main.go ./
 
-RUN go get go.opentelemetry.io/otel@v1.12.0
-RUN go get go.opentelemetry.io/otel/exporters/stdout/stdouttrace@v1.12.0
-RUN go get go.opentelemetry.io/otel/propagation@v1.12.0
-RUN go get go.opentelemetry.io/otel/sdk/resource@v1.12.0
-RUN go get go.opentelemetry.io/otel/sdk/trace@v1.12.0
-RUN go get go.opentelemetry.io/otel/semconv@v1.12.0
-RUN go get go.opentelemetry.io/otel/trace@v1.12.0
+RUN go get go.opentelemetry.io/otel@v1.10.0
+RUN go get go.opentelemetry.io/otel/exporters/stdout/stdouttrace@v1.10.0
+RUN go get go.opentelemetry.io/otel/propagation@v1.10.0
+RUN go get go.opentelemetry.io/otel/sdk/resource@v1.10.0
+RUN go get go.opentelemetry.io/otel/sdk/trace@v1.10.0
+RUN go get go.opentelemetry.io/otel/semconv@v1.10.0
+RUN go get go.opentelemetry.io/otel/trace@v1.10.0
 
 RUN go mod tidy
 RUN go mod download
