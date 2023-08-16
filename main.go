@@ -8,6 +8,8 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/stdout"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -32,31 +34,52 @@ func main() {
 // 1. Método: GET.
 // 2. URL: [Tu URL]/users.
 func ListUsers(c *gin.Context) {
-	_, span := trace.SpanFromContext(c.Request.Context()).Tracer().Start(c.Request.Context(), "ListUsers")
-	if span == nil {
-	    log.Println("Failed to create span")
-	} else {
-		defer span.End()
-		log.Println("Span created")
-		log.Println(span)
-	}
+    ctx, span := trace.SpanFromContext(c.Request.Context()).Tracer().Start(c.Request.Context(), "ListUsers")
+    if span == nil {
+        log.Println("Failed to create span")
+    } else {
+        defer span.End()
+    }
 
-	users := make([]User, 0)
-	rows, err := db.Query("SELECT id, name FROM users")
-	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var u User
-		if err := rows.Scan(&u.ID, &u.Name); err != nil {
-			c.JSON(500, gin.H{"error": err.Error()})
-			return
-		}
-		users = append(users, u)
-	}
-	c.JSON(200, users)
+    // Añadir un atributo con detalles de la consulta
+    span.SetAttributes(attribute.String("db.query", "SELECT id, name FROM users"))
+
+    users := make([]User, 0)
+    
+    // Registrar un evento: comenzando la consulta
+    span.AddEvent("Starting database query", trace.WithAttributes(attribute.String("event", "query-start")))
+
+    rows, err := db.QueryContext(ctx, "SELECT id, name FROM users") // Nota: Usando QueryContext para propagar el contexto
+    if err != nil {
+        // Establecer el estado en caso de error
+        span.SetStatus(codes.Error, "Failed to query database")
+        span.SetAttributes(attribute.String("db.error", err.Error()))
+
+        c.JSON(500, gin.H{"error": err.Error()})
+        return
+    }
+    defer rows.Close()
+
+    // Registrar un evento: consulta completada con éxito
+    span.AddEvent("Database query completed", trace.WithAttributes(attribute.String("event", "query-end")))
+
+    for rows.Next() {
+        var u User
+        if err := rows.Scan(&u.ID, &u.Name); err != nil {
+            // Establecer el estado en caso de error durante la lectura de las filas
+            span.SetStatus(codes.Error, "Failed to read row from database")
+            span.SetAttributes(attribute.String("db.row.error", err.Error()))
+
+            c.JSON(500, gin.H{"error": err.Error()})
+            return
+        }
+        users = append(users, u)
+    }
+
+    // Registrar un evento: todos los usuarios se han cargado correctamente
+    span.AddEvent("All users loaded", trace.WithAttributes(attribute.Int("user.count", len(users))))
+
+    c.JSON(200, users)
 }
 
 
