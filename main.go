@@ -21,7 +21,30 @@ type User struct {
 var db *sql.DB
 
 func main() {
-	setupTelemetry()
+	l := log.New(os.Stdout, "", 0)
+
+	// Write telemetry data to a file.
+	f, err := os.Create("traces.txt")
+	if err != nil {
+		l.Fatal(err)
+	}
+	defer f.Close()
+
+	exp, err := newExporter(f)
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exp),
+		trace.WithResource(newResource()),
+	)
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			l.Fatal(err)
+		}
+	}()
+	otel.SetTracerProvider(tp)
 	r := gin.Default()
 	r.GET("/users", ListUsers)
 	r.POST("/users", CreateUser)
