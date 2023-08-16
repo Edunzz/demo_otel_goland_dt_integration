@@ -9,7 +9,8 @@ import (
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/stdout"
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/sdk/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 type User struct {
@@ -108,7 +109,7 @@ func setupTelemetry() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	tp := trace.NewTracerProvider(trace.WithSyncer(exporter))
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
 	otel.SetTracerProvider(tp)
 }
 
