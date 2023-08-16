@@ -119,7 +119,7 @@ func setupTelemetry() {
 }
 
 // newExporter returns a console exporter.
-func newExporter(w io.Writer) (trace.SpanExporter, error) {
+func newExporter(w io.Writer) (sdktrace.SpanExporter, error) {
 	return stdouttrace.New(
 		stdouttrace.WithWriter(w),
 		// Use human readable output.
@@ -129,7 +129,7 @@ func newExporter(w io.Writer) (trace.SpanExporter, error) {
 	)
 }
 
-func newTraceProvider(exp trace.SpanExporter) *sdktrace.TracerProvider {
+func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 	r, err := resource.New(context.Background(),
 		resource.WithAttributes(
 			semconv.ServiceNameKey.String("MyService"),
