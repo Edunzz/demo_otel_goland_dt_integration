@@ -2,9 +2,17 @@ FROM golang:1.16-alpine as builder
 
 WORKDIR /app
 COPY go.mod ./
+
+# Descargamos las dependencias específicas que has mencionado.
+RUN go get github.com/gin-gonic/gin
+RUN go get github.com/go-sql-driver/mysql
+RUN go get github.com/swaggo/gin-swagger
+RUN go get github.com/swaggo/gin-swagger/swaggerFiles
+RUN go get go.opentelemetry.io/otel
+RUN go get go.opentelemetry.io/otel/exporters/stdout
+RUN go get go.opentelemetry.io/otel/trace
+
 COPY main.go ./
-RUN go mod tidy
-RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 FROM alpine:latest
