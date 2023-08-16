@@ -5,6 +5,7 @@ import (
 	"log"
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
+	_ "./docs" 
 	"github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 	"go.opentelemetry.io/otel"
