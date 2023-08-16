@@ -1,7 +1,6 @@
 FROM golang:1.16-alpine as builder
 
 WORKDIR /app
-COPY go.mod ./
 
 # Descargamos las dependencias específicas que has mencionado.
 RUN go get github.com/gin-gonic/gin
