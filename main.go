@@ -21,19 +21,12 @@ var db *sql.DB
 func main() {
 	setupTelemetry()
 	r := gin.Default()
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/users", ListUsers)
 	r.POST("/users", CreateUser)
 	r.DELETE("/users/:id", DeleteUser)
 	r.Run()
 }
 
-// @Summary List users
-// @Description Get list of users
-// @ID list-users
-// @Produce json
-// @Success 200 {array} User
-// @Router /users [get]
 func ListUsers(c *gin.Context) {
 	_, span := trace.SpanFromContext(c.Request.Context()).Tracer().Start(c.Request.Context(), "ListUsers")
 	defer span.End()
@@ -56,14 +49,6 @@ func ListUsers(c *gin.Context) {
 	c.JSON(200, users)
 }
 
-// @Summary Create user
-// @Description Create a new user
-// @ID create-user
-// @Accept  json
-// @Produce  json
-// @Param user body User true "User body"
-// @Success 200 {object} User
-// @Router /users [post]
 func CreateUser(c *gin.Context) {
 	var u User
 	if err := c.BindJSON(&u); err != nil {
@@ -85,13 +70,6 @@ func CreateUser(c *gin.Context) {
 	c.JSON(200, gin.H{"id": id})
 }
 
-// @Summary Delete user
-// @Description Delete a user by ID
-// @ID delete-user
-// @Produce  json
-// @Param id path int true "User ID"
-// @Success 200 {object} map[string]interface{}
-// @Router /users/{id} [delete]
 func DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 	_, err := db.Exec("DELETE FROM users WHERE id = ?", id)
