@@ -1,16 +1,21 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"io"
 	"log"
+	"os"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/stdout"
-	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.16.0"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type User struct {
@@ -18,103 +23,54 @@ type User struct {
 	Name string `json:"name"`
 }
 
-var db *sql.DB
+var (
+	db     *sql.DB
+	tracer trace.Tracer
+)
 
 func main() {
-	l := log.New(os.Stdout, "", 0)
-
-	// Write telemetry data to a file.
-	f, err := os.Create("traces.txt")
-	if err != nil {
-		l.Fatal(err)
-	}
-	defer f.Close()
-
-	exp, err := newExporter(f)
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	tp := trace.NewTracerProvider(
-		trace.WithBatcher(exp),
-		trace.WithResource(newResource()),
-	)
-	defer func() {
-		if err := tp.Shutdown(context.Background()); err != nil {
-			l.Fatal(err)
-		}
-	}()
-	otel.SetTracerProvider(tp)
+	setupTelemetry()
 	r := gin.Default()
+
+	// Propagación de trazas a través de HTTP headers
+	r.Use(func(c *gin.Context) {
+		ctx := propagation.TraceContext{}.Extract(c.Request.Context(), propagation.HeaderCarrier(c.Request.Header))
+		c.Request = c.Request.WithContext(ctx)
+		c.Next()
+	})
+
 	r.GET("/users", ListUsers)
 	r.POST("/users", CreateUser)
 	r.DELETE("/users/:id", DeleteUser)
 	r.Run()
 }
 
-// ListUsers lista todos los usuarios.
-// Para usar con Postman:
-// 1. Método: GET.
-// 2. URL: [Tu URL]/users.
 func ListUsers(c *gin.Context) {
-    ctx, span := trace.SpanFromContext(c.Request.Context()).Tracer().Start(c.Request.Context(), "ListUsers")
-    if span == nil {
-        log.Println("Failed to create span")
-    } else {
-        defer span.End()
-	log.Println("Span created")
-    }
+	ctx, span := tracer.Start(c.Request.Context(), "ListUsers")
+	defer span.End()
 
-    // Añadir un atributo con detalles de la consulta
-    span.SetAttributes(attribute.String("db.query", "SELECT id, name FROM users"))
-
-    users := make([]User, 0)
-    
-    // Registrar un evento: comenzando la consulta
-    span.AddEvent("Starting database query", trace.WithAttributes(attribute.String("event", "query-start")))
-
-    rows, err := db.QueryContext(ctx, "SELECT id, name FROM users") // Nota: Usando QueryContext para propagar el contexto
-    if err != nil {
-        // Establecer el estado en caso de error
-        span.SetStatus(codes.Error, "Failed to query database")
-        span.SetAttributes(attribute.String("db.error", err.Error()))
-
-        c.JSON(500, gin.H{"error": err.Error()})
-        return
-    }
-    defer rows.Close()
-
-    // Registrar un evento: consulta completada con éxito
-    span.AddEvent("Database query completed", trace.WithAttributes(attribute.String("event", "query-end")))
-
-    for rows.Next() {
-        var u User
-        if err := rows.Scan(&u.ID, &u.Name); err != nil {
-            // Establecer el estado en caso de error durante la lectura de las filas
-            span.SetStatus(codes.Error, "Failed to read row from database")
-            span.SetAttributes(attribute.String("db.row.error", err.Error()))
-
-            c.JSON(500, gin.H{"error": err.Error()})
-            return
-        }
-        users = append(users, u)
-    }
-
-    // Registrar un evento: todos los usuarios se han cargado correctamente
-    span.AddEvent("All users loaded", trace.WithAttributes(attribute.Int("user.count", len(users))))
-
-    log.Println(span)
-    c.JSON(200, users)
+	users := make([]User, 0)
+	rows, err := db.Query("SELECT id, name FROM users")
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.Name); err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		users = append(users, u)
+	}
+	c.JSON(200, users)
 }
 
-
-// CreateUser crea un nuevo usuario.
-// Para usar con Postman:
-// 1. Método: POST.
-// 2. URL: [Tu URL]/users.
-// 3. Headers: `Content-Type: application/json`.
-// 4. Body (raw, tipo JSON): {"name": "NombreDelUsuario"}
 func CreateUser(c *gin.Context) {
+	ctx, span := tracer.Start(c.Request.Context(), "CreateUser")
+	defer span.End()
+
 	var u User
 	if err := c.BindJSON(&u); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
@@ -135,12 +91,10 @@ func CreateUser(c *gin.Context) {
 	c.JSON(200, gin.H{"id": id})
 }
 
-// DeleteUser elimina un usuario según su ID.
-// Para usar con Postman:
-// 1. Método: DELETE.
-// 2. URL: [Tu URL]/users/{id}.
-// Reemplaza {id} con el ID del usuario que deseas eliminar.
 func DeleteUser(c *gin.Context) {
+	ctx, span := tracer.Start(c.Request.Context(), "DeleteUser")
+	defer span.End()
+
 	id := c.Param("id")
 	_, err := db.Exec("DELETE FROM users WHERE id = ?", id)
 	if err != nil {
@@ -151,15 +105,44 @@ func DeleteUser(c *gin.Context) {
 }
 
 func setupTelemetry() {
-	exporter, err := stdout.NewExporter(stdout.WithPrettyPrint())
+	ctx := context.Background()
+	exp, err := newExporter(os.Stdout)
+	if err != nil {
+		log.Fatalf("failed to initialize exporter: %v", err)
+	}
+
+	tp := newTraceProvider(exp)
+
+	// Establecer el tracer que se puede usar para este paquete
+	tracer = tp.Tracer("MyService")
+
+	otel.SetTracerProvider(tp)
+}
+
+// newExporter returns a console exporter.
+func newExporter(w io.Writer) (trace.SpanExporter, error) {
+	return stdouttrace.New(
+		stdouttrace.WithWriter(w),
+		// Use human readable output.
+		stdouttrace.WithPrettyPrint(),
+		// Do not print timestamps for the demo.
+		stdouttrace.WithoutTimestamps(),
+	)
+}
+
+func newTraceProvider(exp trace.SpanExporter) *sdktrace.TracerProvider {
+	r, err := resource.New(context.Background(),
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String("MyService"),
+		),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	tp := sdktrace.NewTracerProvider(
-	    sdktrace.WithSampler(sdktrace.AlwaysSample()), // Esta línea hace que siempre se registren los spans
-	    sdktrace.WithSyncer(exporter),
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exp),
+		sdktrace.WithResource(r),
 	)
-	otel.SetTracerProvider(tp)
 }
 
 func init() {
@@ -180,3 +163,24 @@ func init() {
 		log.Fatal(err)
 	}
 }
+
+
+
+
+// ListUsers lista todos los usuarios.
+// Para usar con Postman:
+// 1. Método: GET.
+// 2. URL: [Tu URL]/users.
+
+// CreateUser crea un nuevo usuario.
+// Para usar con Postman:
+// 1. Método: POST.
+// 2. URL: [Tu URL]/users.
+// 3. Headers: `Content-Type: application/json`.
+// 4. Body (raw, tipo JSON): {"name": "NombreDelUsuario"}
+
+// DeleteUser elimina un usuario según su ID.
+// Para usar con Postman:
+// 1. Método: DELETE.
+// 2. URL: [Tu URL]/users/{id}.
+// Reemplaza {id} con el ID del usuario que deseas eliminar.
