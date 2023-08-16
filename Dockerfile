@@ -7,6 +7,8 @@ RUN go get go.opentelemetry.io/otel@v0.20.0
 RUN go get go.opentelemetry.io/otel/exporters/stdout@v0.20.0
 RUN go get go.opentelemetry.io/otel/sdk/trace@v0.20.0
 RUN go get go.opentelemetry.io/otel/trace@v0.20.0
+RUN go get go.opentelemetry.io/otel/attribute
+RUN go get go.opentelemetry.io/otel/codes
 RUN go mod tidy
 RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
