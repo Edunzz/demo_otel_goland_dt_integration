@@ -7,7 +7,6 @@ RUN go get go.opentelemetry.io/otel@v0.20.0
 RUN go get go.opentelemetry.io/otel/exporters/stdout@v0.20.0
 RUN go get go.opentelemetry.io/otel/sdk/trace@v0.20.0
 RUN go get go.opentelemetry.io/otel/trace@v0.20.0
-RUN go get -u github.com/swaggo/swag/cmd/swag@1.16.0
 RUN swag init
 RUN ls -lrt
 RUN go mod tidy
