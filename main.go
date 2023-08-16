@@ -36,7 +36,9 @@ func ListUsers(c *gin.Context) {
 	if span == nil {
 	    log.Println("Failed to create span")
 	} else {
-	    defer span.End()
+		defer span.End()
+		log.Println("Span created")
+		log.Println(span)
 	}
 
 	users := make([]User, 0)
