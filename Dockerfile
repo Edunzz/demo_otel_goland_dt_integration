@@ -5,9 +5,9 @@ COPY go.mod ./
 COPY main.go ./
 RUN go mod tidy
 RUN go mod download
-RUN go get go.opentelemetry.io/otel
-RUN go get go.opentelemetry.io/otel/exporters/stdout
-RUN go get go.opentelemetry.io/otel/trace
+RUN go get go.opentelemetry.io/otel@v0.20.0
+RUN go get go.opentelemetry.io/otel/exporters/stdout@v0.20.0
+RUN go get go.opentelemetry.io/otel/trace@v0.20.0
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 FROM alpine:latest
