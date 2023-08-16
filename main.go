@@ -1,5 +1,3 @@
-package main
-
 import (
 	"context"
 	"database/sql"
@@ -10,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/trace/stdout"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -121,13 +119,24 @@ func setupTelemetry() {
 
 // newExporter returns a console exporter.
 func newExporter(w io.Writer) (trace.SpanExporter, error) {
-	return stdout.NewExporter(stdout.WithPrettyPrint()), nil
+	return stdouttrace.New(
+		stdouttrace.WithWriter(w),
+		// Use human readable output.
+		stdouttrace.WithPrettyPrint(),
+		// Do not print timestamps for the demo.
+		stdouttrace.WithoutTimestamps(),
+	)
 }
 
 func newTraceProvider(exp trace.SpanExporter) *sdktrace.TracerProvider {
-	r := resource.NewWithAttributes(
-		semconv.ServiceNameKey.String("MyService"),
+	r, err := resource.New(context.Background(),
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String("MyService"),
+		),
 	)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exp),
 		sdktrace.WithResource(r),
@@ -152,8 +161,6 @@ func init() {
 		log.Fatal(err)
 	}
 }
-
-
 
 
 
