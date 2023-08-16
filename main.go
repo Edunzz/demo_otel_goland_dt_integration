@@ -1,9 +1,11 @@
 package main
+
 import (
 	"context"
 	"database/sql"
 	"io"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -45,66 +47,66 @@ func main() {
 }
 
 func ListUsers(c *gin.Context) {
-	ctx, span := tracer.Start(c.Request.Context(), "ListUsers")
+	_, span := tracer.Start(c.Request.Context(), "ListUsers")
 	defer span.End()
 
 	users := make([]User, 0)
 	rows, err := db.Query("SELECT id, name FROM users")
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	defer rows.Close()
+
 	for rows.Next() {
 		var u User
 		if err := rows.Scan(&u.ID, &u.Name); err != nil {
-			c.JSON(500, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 		users = append(users, u)
 	}
-	c.JSON(200, users)
+	c.JSON(http.StatusOK, users)
 }
 
 func CreateUser(c *gin.Context) {
-	ctx, span := tracer.Start(c.Request.Context(), "CreateUser")
+	_, span := tracer.Start(c.Request.Context(), "CreateUser")
 	defer span.End()
 
 	var u User
 	if err := c.BindJSON(&u); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	res, err := db.Exec("INSERT INTO users(name) VALUES(?)", u.Name)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	id, err := res.LastInsertId()
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(200, gin.H{"id": id})
+	c.JSON(http.StatusOK, gin.H{"id": id})
 }
 
 func DeleteUser(c *gin.Context) {
-	ctx, span := tracer.Start(c.Request.Context(), "DeleteUser")
+	_, span := tracer.Start(c.Request.Context(), "DeleteUser")
 	defer span.End()
 
 	id := c.Param("id")
 	_, err := db.Exec("DELETE FROM users WHERE id = ?", id)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(200, gin.H{"message": "User deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }
 
 func setupTelemetry() {
-	ctx := context.Background()
 	exp, err := newExporter(os.Stdout)
 	if err != nil {
 		log.Fatalf("failed to initialize exporter: %v", err)
