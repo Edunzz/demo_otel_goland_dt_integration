@@ -27,6 +27,10 @@ func main() {
 	r.Run()
 }
 
+// ListUsers lista todos los usuarios.
+// Para usar con Postman:
+// 1. Método: GET.
+// 2. URL: [Tu URL]/users.
 func ListUsers(c *gin.Context) {
 	_, span := trace.SpanFromContext(c.Request.Context()).Tracer().Start(c.Request.Context(), "ListUsers")
 	defer span.End()
@@ -49,6 +53,13 @@ func ListUsers(c *gin.Context) {
 	c.JSON(200, users)
 }
 
+
+// CreateUser crea un nuevo usuario.
+// Para usar con Postman:
+// 1. Método: POST.
+// 2. URL: [Tu URL]/users.
+// 3. Headers: `Content-Type: application/json`.
+// 4. Body (raw, tipo JSON): {"name": "NombreDelUsuario"}
 func CreateUser(c *gin.Context) {
 	var u User
 	if err := c.BindJSON(&u); err != nil {
@@ -70,6 +81,11 @@ func CreateUser(c *gin.Context) {
 	c.JSON(200, gin.H{"id": id})
 }
 
+// DeleteUser elimina un usuario según su ID.
+// Para usar con Postman:
+// 1. Método: DELETE.
+// 2. URL: [Tu URL]/users/{id}.
+// Reemplaza {id} con el ID del usuario que deseas eliminar.
 func DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 	_, err := db.Exec("DELETE FROM users WHERE id = ?", id)
