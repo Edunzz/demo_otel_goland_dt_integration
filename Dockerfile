@@ -5,7 +5,6 @@ COPY go.mod ./
 COPY main.go ./
 
 RUN go get go.opentelemetry.io/otel@v1.10.0
-RUN go get go.opentelemetry.io/otel/exporters/stdout@v1.10.0
 RUN go get go.opentelemetry.io/otel/exporters/stdout/stdouttrace@v1.10.0
 RUN go get go.opentelemetry.io/otel/propagation@v1.10.0
 RUN go get go.opentelemetry.io/otel/sdk/resource@v1.10.0
