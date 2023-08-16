@@ -39,6 +39,7 @@ func ListUsers(c *gin.Context) {
         log.Println("Failed to create span")
     } else {
         defer span.End()
+	log.Println("Span created")
     }
 
     // Añadir un atributo con detalles de la consulta
@@ -79,6 +80,7 @@ func ListUsers(c *gin.Context) {
     // Registrar un evento: todos los usuarios se han cargado correctamente
     span.AddEvent("All users loaded", trace.WithAttributes(attribute.Int("user.count", len(users))))
 
+    log.Println(span)
     c.JSON(200, users)
 }
 
@@ -130,7 +132,10 @@ func setupTelemetry() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	tp := sdktrace.NewTracerProvider(
+	    sdktrace.WithSampler(sdktrace.AlwaysSample()), // Esta línea hace que siempre se registren los spans
+	    sdktrace.WithSyncer(exporter),
+	)
 	otel.SetTracerProvider(tp)
 }
 
