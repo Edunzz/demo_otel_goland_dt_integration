@@ -33,7 +33,11 @@ func main() {
 // 2. URL: [Tu URL]/users.
 func ListUsers(c *gin.Context) {
 	_, span := trace.SpanFromContext(c.Request.Context()).Tracer().Start(c.Request.Context(), "ListUsers")
-	defer span.End()
+	if span == nil {
+	    log.Println("Failed to create span")
+	} else {
+	    defer span.End()
+	}
 
 	users := make([]User, 0)
 	rows, err := db.Query("SELECT id, name FROM users")
