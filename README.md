@@ -54,7 +54,7 @@ Los detalles de configuración e inicialización del rastreo se encuentran en la
 
 No se realiza un exporte directo de los spans. En su lugar, estos son recolectados y gestionados por Dynatrace OneAgent, que integra y visualiza las trazas y spans en su tecnología patentada llamada PurePath.
 
-
+![Imagen Descriptiva](resources/otel_dynatrace_go_demo.png)
 
 ## Nota Importante
 
