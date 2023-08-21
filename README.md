@@ -1,6 +1,6 @@
 # Demo OpenTelemetry con Go 1.16 y Dynatrace Integration
 
-Este repositorio contiene una aplicación de demostración en Go versión 1.16 que utiliza OpenTelemetry versión 1.10.
+Este repositorio contiene una aplicación de demostración en Go versión 1.16 que utiliza OpenTelemetry para Go versión 1.10.
 
 ## Prerrequisitos
 
