@@ -25,7 +25,11 @@ Este repositorio contiene una aplicación de demostración en Go versión 1.16 q
    docker-compose up -d
    ```
 
-## Uso con Postman
+## Instalar Dynatrace Oneagent
+
+Para tener el monitoreo Dynatrace se requiere instalar Oneagent siguiendo los pasos indicados en el deploy dynatrace.
+
+## Uso con Postman para generar tráfico
 
 Puedes encontrar un archivo `postman.json` en este repositorio que contiene los endpoints preparados para hacer requests al servicio y generar tráfico.
 
@@ -46,9 +50,11 @@ defer span.End()
 
 Este patrón se sigue en todos los endpoints.
 
-Los detalles de configuración e inicialización del rastreo se encuentran en las funciones `setupTelemetry`, `newExporter` y `newTraceProvider`.
+Los detalles de configuración e inicialización del rastreo se encuentran en las funciones `setupTelemetry`, `newExporter` y `newTraceProvider` del main.go.
 
 No se realiza un exporte directo de los spans. En su lugar, estos son recolectados y gestionados por Dynatrace OneAgent, que integra y visualiza las trazas y spans en su tecnología patentada llamada PurePath.
+
+
 
 ## Nota Importante
 
