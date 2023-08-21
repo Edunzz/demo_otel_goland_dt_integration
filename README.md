@@ -17,7 +17,7 @@ Este repositorio contiene una aplicación de demostración en Go versión 1.16 q
 
 3. **Navega al directorio clonado:**
    ```bash
-   cd demo_otel_goland_dt_integration
+   cd demo_otel_goland_dt_integration/app_go
    ```
 
 4. **Levantar el servicio usando Docker Compose:**
