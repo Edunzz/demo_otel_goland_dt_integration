@@ -11,19 +11,19 @@ Este repositorio contiene una aplicación de demostración en Go versión 1.16 q
 ## Cómo comenzar
 
 1. **Clonar el repositorio:**
-   ```bash
+   \```bash
    git clone https://github.com/Edunzz/demo_otel_goland_dt_integration.git
-   ```
+   \```
 
 2. **Navega al directorio clonado:**
-`bash
+   \```bash
    cd demo_otel_goland_dt_integration
-`
+   \```
 
 3. **Levantar el servicio usando Docker Compose:**
-`bash
+   \```bash
    docker-compose -f app_go/docker-compose.yml up --build
-`
+   \```
 
 ## Uso con Postman
 
@@ -39,10 +39,10 @@ La instrumentación se realiza a través de la librería OpenTelemetry. Cada end
 
 Por ejemplo, en el endpoint `ListUsers`, tenemos:
 
-`go
+\```go
 _, span := tracer.Start(c.Request.Context(), "ListUsers")
 defer span.End()
-`
+\```
 
 Este patrón se sigue en todos los endpoints.
 
