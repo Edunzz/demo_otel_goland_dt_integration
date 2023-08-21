@@ -22,7 +22,7 @@ Este repositorio contiene una aplicación de demostración en Go versión 1.16 q
 
 4. **Levantar el servicio usando Docker Compose:**
    ```bash
-   docker-compose -f app_go/docker-compose.yml up --build
+   docker-compose up -d
    ```
 
 ## Uso con Postman
